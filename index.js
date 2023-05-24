@@ -26,6 +26,13 @@ app.set("view engine", "hbs");
 const port = process.env.port || 5000;
 
 // routes
+app.get("/createTables", (req, res) => {
+  let models = require("./models");
+  models.sequelize.sync().then(() => {
+    res.send("tables created successfully");
+  });
+});
+
 app.get("/", (req, res) => {
   res.render("index");
 });
