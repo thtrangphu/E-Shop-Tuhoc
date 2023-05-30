@@ -1,6 +1,7 @@
 let controller = {};
 const models = require("../models");
-
+const sequelize = require("sequelize");
+const Op = sequelize.Op;
 controller.getData = async (req, res, next) => {
   let categories = await models.Category.findAll({
     include: [
@@ -33,7 +34,7 @@ controller.show = async (req, res) => {
   let category = isNaN(req.query.category) ? 0 : parseInt(req.query.category);
   let brand = isNaN(req.query.brand) ? 0 : parseInt(req.query.brand);
   let tag = isNaN(req.query.tag) ? 0 : parseInt(req.query.tag);
-
+  let keyword = req.query.keyword || "";
   let options = {
     attributes: ["id", "name", "imagePath", "stars", "price", "oldPrice"],
     where: {},
@@ -53,6 +54,13 @@ controller.show = async (req, res) => {
       },
     ];
   }
+
+  if (keyword.trim() != " ") {
+    options.where.name = {
+      [Op.iLike]: `%${keyword}%`,
+    };
+  }
+
   let products = await models.Product.findAll(options);
 
   res.locals.products = products;
