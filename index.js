@@ -7,6 +7,7 @@ const path = require("path"); // Thêm dòng này để định nghĩa biến pa
 const app = express();
 const expressHandlebars = require("express-handlebars");
 const { createStarList } = require("./controllers/handlebarsHelper");
+const { createPagination } = require("express-handlebars-paginate");
 // cau hinh public static folder
 app.use(express.static(path.join(__dirname + "/public")));
 
@@ -24,6 +25,7 @@ app.engine(
     },
     helpers: {
       createStarList,
+      createPagination,
     },
   })
 );

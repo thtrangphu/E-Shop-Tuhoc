@@ -35,10 +35,14 @@ controller.show = async (req, res) => {
   let brand = isNaN(req.query.brand) ? 0 : parseInt(req.query.brand);
   let tag = isNaN(req.query.tag) ? 0 : parseInt(req.query.tag);
   let keyword = req.query.keyword || "";
+  let sort = ["price", "newest", "popular"].includes(req.query.sort)
+    ? req.query.sort
+    : "price";
   let options = {
     attributes: ["id", "name", "imagePath", "stars", "price", "oldPrice"],
     where: {},
   };
+  let page = isNaN(req.query.page) ? 1 : parseInt(req.query.page);
   // tạo tham số dể
   if (category > 0) {
     options.where.categoryId = category;
@@ -57,13 +61,41 @@ controller.show = async (req, res) => {
 
   if (keyword.trim() != " ") {
     options.where.name = {
+      // select * from products where name like "%abc%"
       [Op.iLike]: `%${keyword}%`,
     };
   }
 
-  let products = await models.Product.findAll(options);
+  switch (sort) {
+    case "newest":
+      options.order = [["createdAt", "DESC"]];
+      break;
+    case "popular":
+      options.order = [["stars", "DESC"]];
+      break;
+    default:
+      options.order = [["price", "ASC"]];
+  }
+  res.locals.sort = sort;
+  res.locals.originalUrl = removeParam("sort", req.originalUrl);
+  if (Object.keys(req.query).length == 0) {
+    res.locals.originalUrl = res.locals.originalUrl + "?";
+  }
+  // Phan trang
+  const limit = 6; //6sp 0->5 6->11
+  options.limit = limit;
+  options.offset = limit * (page - 1);
+  let { rows, count } = await models.Product.findAndCountAll(options);
 
-  res.locals.products = products;
+  res.locals.pagination = {
+    page: page,
+    limit: limit,
+    totalRows: count,
+    queryParams: req.query,
+  };
+
+  // let products = await models.Product.findAll(options);
+  res.locals.products = rows;
   res.render("product-list");
 };
 
@@ -103,5 +135,23 @@ controller.showDetails = async (req, res) => {
 
   res.render("product-detail");
 };
+
+function removeParam(key, sourceURL) {
+  var rtn = sourceURL.split("?")[0],
+    param,
+    params_arr = [],
+    queryString = sourceURL.indexOf("?") !== -1 ? sourceURL.split("?")[1] : "";
+  if (queryString !== "") {
+    params_arr = queryString.split("&");
+    for (var i = params_arr.length - 1; i >= 0; i -= 1) {
+      param = params_arr[i].split("=")[0];
+      if (param === key) {
+        params_arr.splice(i, 1);
+      }
+    }
+    if (params_arr.length) rtn = rtn + "?" + params_arr.join("&");
+  }
+  return rtn;
+}
 
 module.exports = controller;
